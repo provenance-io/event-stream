@@ -39,7 +39,7 @@ class Factory(
                 config = config,
                 moshi = defaultMoshi(),
                 eventStreamBuilder = defaultEventStreamBuilder(config.eventStream.websocket.uri),
-                fetcher = TendermintBlockFetcher(defaultTendermintService(config.eventStream.rpc.uri))
+                fetcher = TendermintBlockFetcher(defaultTendermintService(config.eventStream.rpc.uri, config.eventStream.rpc.chainId))
             )
         }
     }

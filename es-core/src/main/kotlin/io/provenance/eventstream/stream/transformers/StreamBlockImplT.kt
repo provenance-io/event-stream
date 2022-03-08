@@ -1,6 +1,9 @@
 package io.provenance.eventstream.stream.transformers
 
+import cosmos.base.abci.v1beta1.Abci
 import io.provenance.eventstream.config.Options
+import io.provenance.eventstream.extensions.dateTime
+import io.provenance.eventstream.extensions.txHash
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.StreamBlockImpl
@@ -11,6 +14,8 @@ import io.provenance.eventstream.stream.models.extensions.blockEvents
 import io.provenance.eventstream.stream.models.extensions.dateTime
 import io.provenance.eventstream.stream.models.extensions.txEvents
 import io.provenance.eventstream.stream.models.extensions.txHash
+import tendermint.abci.Types
+import tendermint.types.BlockOuterClass
 
 /**
  * Query a block by height, returning any events associated with the block.
@@ -26,17 +31,17 @@ suspend fun queryBlock(
     fetcher: TendermintBlockFetcher,
     options: Options
 ): StreamBlockImpl? {
-    val block: Block? = fetcher.getBlock(height)
+    val block: BlockOuterClass.Block = fetcher.getBlock(height)
 
-    if (skipIfNoTxs && (block?.data?.txs?.size ?: 0) == 0) {
+    if (skipIfNoTxs && (block?.data?.txsList?.size ?: 0) == 0) {
         return null
     }
 
     return block?.run {
         val blockDatetime = header?.dateTime()
-        val blockResponse = fetcher.getBlockResults(header!!.height)!!.result
-        val blockEvents: List<BlockEvent> = blockResponse.blockEvents(blockDatetime)
-        val txEvents: List<TxEvent> = blockResponse.txEvents(blockDatetime) { index: Int -> txHash(index) ?: "" }
+        val blockResponse = fetcher.getBlockResults(this)!!
+        val blockEvents: List<Types.Event> = blockResponse.blockEvents
+        val txEvents: List<Abci.StringEvent> = blockResponse.txEvents//blockResponse.txEvents(blockDatetime, height) { index: Int -> txHash(index) ?: "" }
         val streamBlock = StreamBlockImpl(this, blockEvents, txEvents, historical)
         val matchBlock = matchesBlockEvent(blockEvents, options)
         val matchTx = matchesTxEvent(txEvents, options)
@@ -56,12 +61,12 @@ suspend fun queryBlock(
  * @return True or false if [Options.blockEventPredicate] matches a block-level event associated with a block.
  * If the return value is null, then [Options.blockEventPredicate] was never set.
  */
-private fun <T : EncodedBlockchainEvent> matchesBlockEvent(blockEvents: List<T>, options: Options): Boolean? =
+private fun matchesBlockEvent(blockEvents: List<Types.Event>, options: Options): Boolean? =
     options.blockEventPredicate?.let { p ->
         if (options.skipIfEmpty) {
-            blockEvents.any { p(it.eventType) }
+            blockEvents.any { p(it.type) }
         } else {
-            blockEvents.isEmpty() || blockEvents.any { p(it.eventType) }
+            blockEvents.isEmpty() || blockEvents.any { p(it.type) }
         }
     }
 
@@ -71,11 +76,11 @@ private fun <T : EncodedBlockchainEvent> matchesBlockEvent(blockEvents: List<T>,
  * @return True or false if [Options.txEventPredicate] matches a transaction-level event associated with a block.
  * If the return value is null, then [Options.txEventPredicate] was never set.
  */
-private fun <T : EncodedBlockchainEvent> matchesTxEvent(txEvents: List<T>, options: Options): Boolean? =
+private fun matchesTxEvent(txEvents: List<Abci.StringEvent>, options: Options): Boolean? =
     options.txEventPredicate?.let { p ->
         if (options.skipIfEmpty) {
-            txEvents.any { p(it.eventType) }
+            txEvents.any { p(it.type) }
         } else {
-            txEvents.isEmpty() || txEvents.any { p(it.eventType) }
+            txEvents.isEmpty() || txEvents.any { p(it.type) }
         }
     }

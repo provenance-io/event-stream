@@ -1,15 +1,4 @@
 {
-  "jsonrpc": "2.0",
-  "id": -1,
-  "result": {
-    "block_id": {
-      "hash": "BD6AA1BF462BBE385916C04C611561E196DB7E41810368557DA6E1C749E2FADD",
-      "parts": {
-        "total": 1,
-        "hash": "CD4B73B361A50985903E95A62FF89D79FAB0C4D9988D7735911C175A38429E26"
-      }
-    },
-    "block": {
       "header": {
         "version": {
           "block": "11"
@@ -98,5 +87,3 @@
         ]
       }
     }
-  }
-}

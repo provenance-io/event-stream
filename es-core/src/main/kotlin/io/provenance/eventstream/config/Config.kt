@@ -9,7 +9,7 @@ data class WebsocketStreamConfig(
     @ConfigAlias("throttle_duration_ms") val throttleDurationMs: Long = 0
 )
 
-data class RpcStreamConfig(val uri: String)
+data class RpcStreamConfig(val uri: String, val chainId: String)
 
 data class StreamEventsFilterConfig(
     @ConfigAlias("tx_events") val txEvents: Set<String> = emptySet(),

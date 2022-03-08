@@ -1,5 +1,6 @@
 package io.provenance.eventstream.test.mocks
 
+import com.google.protobuf.util.JsonFormat
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.tinder.scarlet.Message
@@ -14,6 +15,7 @@ import kotlinx.coroutines.channels.ChannelIterator
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
+import tendermint.types.BlockOuterClass
 import java.util.concurrent.atomic.AtomicLong
 
 class MockEventStreamService private constructor(
@@ -69,6 +71,18 @@ class MockEventStreamService private constructor(
             val response: JsonAdapter<T> = moshi.adapter(clazz)
             for (datum in eventData) {
                 payloads.add(response.toJson(datum))
+            }
+        }
+
+        /**
+         * Add a response to be emitted by the event stream.
+         *
+         * @param eventData The actual data to emit.
+         * @return this
+         */
+        fun response(eventData: Array<BlockOuterClass.Block>): Builder = apply {
+            for (datum in eventData) {
+                payloads.add(JsonFormat.printer().print(datum))
             }
         }
 

@@ -1,6 +1,8 @@
 package io.provenance.eventstream.stream.observers
 
+import cosmos.base.abci.v1beta1.Abci
 import io.provenance.blockchain.stream.api.BlockSink
+import io.provenance.eventstream.extensions.dateTime
 import io.provenance.eventstream.extensions.decodeBase64
 import io.provenance.eventstream.extensions.isAsciiPrintable
 import io.provenance.eventstream.stream.models.Event
@@ -8,26 +10,30 @@ import io.provenance.eventstream.stream.models.TxEvent
 import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.models.StreamBlock
-import io.provenance.eventstream.stream.models.extensions.dateTime
 import mu.KotlinLogging
+import tendermint.abci.Types
 
 fun consoleOutput(verbose: Boolean, nth: Int = 100): ConsoleOutput = ConsoleOutput(verbose, nth)
 
 class ConsoleOutput(private val verbose: Boolean, private val nth: Int) : BlockSink {
     private val log = KotlinLogging.logger {}
 
-    private val logAttribute: (Event) -> Unit = {
+    private val logAttribute: (Abci.Attribute) -> Unit = {
         log.info { "    ${it.key?.repeatDecodeBase64()}: ${it.value?.repeatDecodeBase64()}" }
     }
 
-    private val logBlockTxEvent: (TxEvent) -> Unit = {
-        log.info { "  Tx-Event: ${it.eventType}" }
-        it.attributes.forEach(logAttribute)
+    private val logAttributeBlock: (Types.EventAttribute) -> Unit = {
+        log.info { "    ${it.key?.toStringUtf8()?.repeatDecodeBase64()}: ${it.value?.toStringUtf8()?.repeatDecodeBase64()}" }
     }
 
-    private val logBlockEvent: (BlockEvent) -> Unit = {
-        log.info { "  Block-Event: ${it.eventType}" }
-        it.attributes.forEach(logAttribute)
+    private val logBlockTxEvent: (Abci.StringEvent) -> Unit = {
+        log.info { "  Tx-Event: ${it.type}" }
+        it.attributesList.forEach(logAttribute)
+    }
+
+    private val logBlockEvent: (Types.Event) -> Unit = {
+        log.info { "  Block-Event: ${it.type}" }
+        it.attributesList.forEach(logAttributeBlock)
     }
 
     private val logBlockInfo: StreamBlockImpl.() -> Unit = {

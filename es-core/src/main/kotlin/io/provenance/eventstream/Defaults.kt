@@ -84,8 +84,8 @@ fun defaultMoshi(): Moshi = Moshi.Builder()
  * @param rpcUri The URI of the Tendermint RPC service to connect to.
  * @return The [TendermintServiceClient] instance to use for the event stream.
  */
-fun defaultTendermintService(rpcUri: String): TendermintServiceClient =
-    TendermintServiceOpenApiClient(rpcUri)
+fun defaultTendermintService(rpcUri: String, chainId: String): TendermintServiceClient =
+    TendermintServiceOpenApiClient(URI(rpcUri), chainId)
 
 /**
  * Create the default [TendermintServiceClient] to use with the event stream.
@@ -93,14 +93,14 @@ fun defaultTendermintService(rpcUri: String): TendermintServiceClient =
  * @param rpcUri The URI of the Tendermint RPC service to connect to.
  * @return The [TendermintServiceClient] instance to use for the event stream.
  */
-fun defaultTendermintFetcher(rpcUri: String): TendermintBlockFetcher =
-    TendermintBlockFetcher(TendermintServiceOpenApiClient(rpcUri))
+fun defaultTendermintFetcher(rpcUri: String, chainId: String): TendermintBlockFetcher =
+    TendermintBlockFetcher(TendermintServiceOpenApiClient(URI(rpcUri), chainId))
 
 /**
  *
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTime::class)
-fun defaultEventStream(config: Config, options: Options, okHttpClient: OkHttpClient = defaultOkHttpClient(), moshi: Moshi = defaultMoshi(), fetcher: TendermintBlockFetcher = defaultTendermintFetcher(config.eventStream.rpc.uri)): EventStream {
+fun defaultEventStream(config: Config, options: Options, okHttpClient: OkHttpClient = defaultOkHttpClient(), moshi: Moshi = defaultMoshi(), fetcher: TendermintBlockFetcher = defaultTendermintFetcher(config.eventStream.rpc.uri, config.eventStream.rpc.chainId)): EventStream {
     val factory = Factory(
         config = config,
         moshi = moshi,

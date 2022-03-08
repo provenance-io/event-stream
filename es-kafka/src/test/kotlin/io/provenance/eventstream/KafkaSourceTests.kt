@@ -1,11 +1,10 @@
 package io.provenance.eventstream
 
+import com.google.protobuf.util.JsonFormat
 import com.squareup.moshi.JsonAdapter
 import io.provenance.eventstream.stream.KafkaStreamBlock
 import io.provenance.eventstream.stream.acking
-import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockEvent
-import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.toByteArray
@@ -29,6 +28,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
+import tendermint.types.BlockOuterClass
 import java.lang.IllegalStateException
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -48,12 +48,13 @@ class KafkaSourceTests : TestBase() {
 
     @BeforeAll
     override fun setup() {
-        val blockResponses = mutableMapOf<String, BlockResponse>()
+        val blockResponses = mutableMapOf<String, BlockOuterClass.Block>()
         val blockResultsResponses = mutableMapOf<String, BlockResultsResponse>()
         templates.readAll("block").forEach {
-            val adapter: JsonAdapter<BlockResponse> = moshi.adapter(BlockResponse::class.java)
-            val blockResponse = adapter.fromJson(it)
-            blockResponses[blockResponse!!.result!!.block!!.header!!.height.toString()] = blockResponse
+            var blockBuilder = BlockOuterClass.Block.newBuilder()
+            JsonFormat.parser().ignoringUnknownFields().merge(it, blockBuilder)
+            val blockResponse = blockBuilder.build()
+            blockResponses[blockResponse!!!!.header!!.height.toString()] = blockResponse
         }
         templates.readAll("block_results").forEach {
             val adapter: JsonAdapter<BlockResultsResponse> = moshi.adapter(BlockResultsResponse::class.java)
@@ -64,7 +65,7 @@ class KafkaSourceTests : TestBase() {
             val blockEvents = v.result.beginBlockEvents!!.map {
                 BlockEvent(v.result.height, OffsetDateTime.now(), it.type!!, it.attributes!!)
             }
-            streamBlocks[k] = StreamBlockImpl(blockResponses[k]!!.result!!.block!!, blockEvents, mutableListOf())
+            streamBlocks[k] = StreamBlockImpl(blockResponses[k]!!, blockEvents, mutableListOf())
         }
     }
 
@@ -79,9 +80,9 @@ class KafkaSourceTests : TestBase() {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun testStreamBlockByteArrayExtensionsEmpty() {
-        val streamBytes = StreamBlockImpl(Block(), mutableListOf(), mutableListOf()).toByteArray()
+        val streamBytes = StreamBlockImpl(BlockOuterClass.Block.getDefaultInstance(), mutableListOf(), mutableListOf()).toByteArray()
         val streamBlockImpl = streamBytes!!.toStreamBlock()
-        assert(streamBlockImpl!!.block.data == null)
+        assert(streamBlockImpl!!.block.header.chainId == "")
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

@@ -1,8 +1,8 @@
 package io.provenance.eventstream.stream.observers
 
+import com.google.protobuf.util.JsonFormat
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapter
 import io.provenance.blockchain.stream.api.BlockSink
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.models.StreamBlock
@@ -14,7 +14,6 @@ fun fileOutput(dir: String, decoder: Moshi): FileOutput = FileOutput(dir, decode
 
 @OptIn(ExperimentalStdlibApi::class)
 class FileOutput(dir: String, decoder: Moshi) : BlockSink {
-    private val adapter: JsonAdapter<StreamBlockImpl> = decoder.adapter()
     private val dirname = { name: String -> "$dir/$name" }
 
     init {
@@ -30,8 +29,14 @@ class FileOutput(dir: String, decoder: Moshi) : BlockSink {
 
         val filename = "$dirname/${block.height.toString().padStart(10, '0')}.json"
         val file = File(filename)
+        val blockImpl = block as StreamBlockImpl
+        var fileString = JsonFormat.printer().print(blockImpl.block)
+        fileString += "\n\n" + blockImpl.height
+        fileString += "\n\n" + blockImpl.blockEvents.map { JsonFormat.printer().print(it) + "\n" }
+        fileString += "\n\n" + blockImpl.txEvents.map { JsonFormat.printer().print(it) + "\n" }
+        fileString += "\n\n" + blockImpl.historical
         if (!file.exists()) {
-            file.writeText(adapter.toJson(block as StreamBlockImpl))
+            file.writeText(fileString)
         }
     }
 }

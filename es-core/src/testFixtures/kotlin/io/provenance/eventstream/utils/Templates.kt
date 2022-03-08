@@ -1,9 +1,12 @@
 package io.provenance.eventstream.test.utils
 
+import com.google.protobuf.util.JsonFormat
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import org.apache.commons.text.StringSubstitutor
 import org.apache.commons.text.io.StringSubstitutorReader
+import tendermint.abci.Types
+import tendermint.types.BlockOuterClass
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.net.URL
@@ -66,6 +69,18 @@ data class Template(private val moshi: Moshi) {
         val contents: String = read(filename, vars)
         val adapter: JsonAdapter<T> = moshi.adapter(clazz)
         return adapter.fromJson(contents)
+    }
+
+    fun readAs(builder: BlockOuterClass.Block.Builder, filename: String, vars: Map<String, Any> = emptyMap()): BlockOuterClass.Block? {
+        val contents: String = read(filename, vars)
+        JsonFormat.parser().ignoringUnknownFields().merge(contents, builder)
+        return builder.build()
+    }
+
+    fun readAs(builder: Types.ResponseInfo.Builder, filename: String, vars: Map<String, Any> = emptyMap()): Types.ResponseInfo? {
+        val contents: String = read(filename, vars)
+        JsonFormat.parser().ignoringUnknownFields().merge(contents, builder)
+        return builder.build()
     }
 
     fun <T> unsafeReadAs(clazz: Class<T>, filename: String, vars: Map<String, Any> = emptyMap()): T =

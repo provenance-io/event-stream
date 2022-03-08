@@ -1,8 +1,5 @@
 package io.provenance.eventstream.observers
 
-import com.squareup.moshi.JsonAdapter
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapter
 import io.provenance.blockchain.stream.api.BlockSink
 import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.StreamBlockImpl
@@ -10,11 +7,10 @@ import io.provenance.eventstream.stream.models.extensions.sha256
 import java.io.File
 import java.math.BigInteger
 
-fun kafkaFileOutput(dir: String, decoder: Moshi): KafkaFileOutput = KafkaFileOutput(dir, decoder)
+fun kafkaFileOutput(dir: String): KafkaFileOutput = KafkaFileOutput(dir)
 
 @OptIn(ExperimentalStdlibApi::class)
-class KafkaFileOutput(dir: String, decoder: Moshi) : BlockSink {
-    private val adapter: JsonAdapter<StreamBlockImpl> = decoder.adapter()
+class KafkaFileOutput(dir: String) : BlockSink {
     private val dirname = { name: String -> "$dir/$name" }
 
     init {
@@ -31,7 +27,7 @@ class KafkaFileOutput(dir: String, decoder: Moshi) : BlockSink {
         val filename = "$dirname/${block.height.toString().padStart(10, '0')}.json"
         val file = File(filename)
         if (!file.exists()) {
-            file.writeText(adapter.toJson(block.toStreamBlockImpl()))
+            file.writeText(block.toStreamBlockImpl().toString())
         }
     }
 }

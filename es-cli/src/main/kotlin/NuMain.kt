@@ -140,6 +140,12 @@ fun main(args: Array<String>) {
         shortName = "b",
         description = "Filter by block events (comma separated)"
     ).default("")
+    val chainId by parser.option(
+        ArgType.String,
+        fullName = "chainId",
+        shortName = "i",
+        description = "chain id"
+    ).default("chain-local")
     val keepEmpty by parser.option(ArgType.Boolean, fullName = "keep-empty", description = "Keep empty blocks")
         .default(true)
     parser.parse(args)
@@ -148,7 +154,7 @@ fun main(args: Array<String>) {
         eventStream = EventStreamConfig(
             skipEmpty = !keepEmpty,
             websocket = WebsocketStreamConfig("ws://$node"),
-            rpc = RpcStreamConfig("http://$node"),
+            rpc = RpcStreamConfig("grpc://$node", chainId),
             filter = StreamEventsFilterConfig(
                 txEvents = txFilter.split(",").filter { it.isNotBlank() }.toSet(),
                 blockEvents = blockFilter.split(",").filter { it.isNotBlank() }.toSet()
@@ -202,7 +208,7 @@ fun main(args: Array<String>) {
             .buffer()
             .catch { log.error("", it) }
             .onEach {
-                kafkaFileOutput("../pio-testnet-1-kafka/json-data", moshi).invoke(it)
+                kafkaFileOutput("../pio-testnet-1-kafka/json-data").invoke(it)
             }
             .acking {
                 log.info("successfully acked:$it")

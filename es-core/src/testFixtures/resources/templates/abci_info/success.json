@@ -1,13 +1,5 @@
 {
-  "id": -1,
-  "jsonrpc": "2.0",
-  "result":
-  {
-    "response":
-    {
-      "data": "provenanced",
-      "last_block_app_hash": "${last_block_app_hash:-TS2VBvUDrg06V0YqhZnWwrUMpwmxcfhhH3u47aMZlAc=}",
-      "last_block_height": "${last_block_height:-3028985}"
-    }
-  }
+  "data": "provenanced",
+  "last_block_app_hash": "${last_block_app_hash:-TS2VBvUDrg06V0YqhZnWwrUMpwmxcfhhH3u47aMZlAc=}",
+  "last_block_height": "${last_block_height:-3028985}"
 }

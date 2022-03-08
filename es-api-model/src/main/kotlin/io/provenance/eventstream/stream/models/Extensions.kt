@@ -1,6 +1,7 @@
 package io.provenance.eventstream.stream.models.extensions
 
 import com.google.common.io.BaseEncoding
+import com.google.protobuf.ByteString
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.BlockHeader
@@ -38,6 +39,8 @@ fun sha256(input: ByteArray?): ByteArray =
  * Compute a hex-encoded (printable) SHA-256 encoded string, from a base64 encoded string.
  */
 fun String.hash(): String = sha256(BaseEncoding.base64().decode(this)).toHexString()
+
+fun ByteString.hash(): String = sha256(BaseEncoding.base64().decode(this.toByteArray().toHexString())).toHexString()
 
 // === Date/time methods ===============================================================================================
 

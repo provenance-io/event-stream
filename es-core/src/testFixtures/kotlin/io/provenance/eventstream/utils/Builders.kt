@@ -7,14 +7,14 @@ import io.provenance.eventstream.stream.EventStreamService
 import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
-import io.provenance.eventstream.stream.models.ABCIInfoResponse
-import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.BlockchainResponse
 import io.provenance.eventstream.test.mocks.MockEventStreamService
 import io.provenance.eventstream.test.mocks.MockTendermintServiceClient
 import io.provenance.eventstream.test.mocks.ServiceMocker
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import tendermint.abci.Types
+import tendermint.types.BlockOuterClass.Block
 
 @ExperimentalCoroutinesApi
 object Builders {
@@ -25,12 +25,12 @@ object Builders {
     fun tendermintService(): ServiceMocker.Builder = ServiceMocker.Builder()
         .doFor("abciInfo") {
             Defaults.templates.readAs(
-                ABCIInfoResponse::class.java,
+                Types.ResponseInfo.newBuilder(),
                 "abci_info/success.json",
                 mapOf("last_block_height" to MAX_HISTORICAL_BLOCK_HEIGHT)
             )
         }
-        .doFor("block") { Defaults.templates.readAs(BlockResponse::class.java, "block/${it[0]}.json") }
+        .doFor("block") { Defaults.templates.readAs(Block.newBuilder(), "block/${it[0]}.json") }
         .doFor("blockResults") {
             Defaults.templates.readAs(
                 BlockResultsResponse::class.java,

@@ -2,6 +2,7 @@ package io.provenance.eventstream.stream.models
 
 import com.squareup.moshi.JsonClass
 import java.time.OffsetDateTime
+import java.io.Serializable
 
 /**
  * Used to represent block-level events like `reward`, `commission`, etc.
@@ -12,4 +13,4 @@ data class BlockEvent(
     val blockDateTime: OffsetDateTime?,
     override val eventType: String,
     override val attributes: List<Event>
-) : EncodedBlockchainEvent
+) : EncodedBlockchainEvent, Serializable

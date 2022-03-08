@@ -3,6 +3,7 @@ package io.provenance.eventstream
 import io.provenance.eventstream.config.Config
 import io.provenance.eventstream.config.Environment
 import io.provenance.eventstream.config.Options
+import io.provenance.eventstream.extensions.dateTime
 import io.provenance.eventstream.extensions.repeatDecodeBase64
 import io.provenance.eventstream.stream.consumers.EventStreamViewer
 import io.provenance.eventstream.stream.models.StreamBlock
@@ -125,14 +126,14 @@ fun main(args: Array<String>) {
                 )
                 if (verbose) {
                     for (event in b.blockEvents) {
-                        println("  Block-Event: ${event.eventType}")
-                        for (attr in event.attributes) {
-                            println("    ${attr.key?.repeatDecodeBase64()}: ${attr.value?.repeatDecodeBase64()}")
+                        println("  Block-Event: ${event.type}")
+                        for (attr in event.attributesList) {
+                            println("    ${attr.key?.toStringUtf8()?.repeatDecodeBase64()}: ${attr.value?.toStringUtf8()?.repeatDecodeBase64()}")
                         }
                     }
                     for (event in b.txEvents) {
-                        println("  Tx-Event: ${event.eventType}")
-                        for (attr in event.attributes) {
+                        println("  Tx-Event: ${event.type}")
+                        for (attr in event.attributesList) {
                             println("    ${attr.key?.repeatDecodeBase64()}: ${attr.value?.repeatDecodeBase64()}")
                         }
                     }

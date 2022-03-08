@@ -21,6 +21,8 @@ dependencies {
     implementation(libs.kafka)
     implementation(libs.kotlinx.cli)
     implementation(libs.okhttp.client)
+    implementation(libs.bundles.grpc)
+    implementation(libs.provenance.protos)
 }
 
 application {

@@ -1,5 +1,6 @@
 package io.provenance.eventstream.test
 
+import com.google.protobuf.util.JsonFormat
 import com.squareup.moshi.JsonEncodingException
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
@@ -7,8 +8,6 @@ import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.models.Event
 import io.provenance.eventstream.stream.models.toDecodedMap
 import io.provenance.eventstream.stream.models.BlockResultsResponse
-import io.provenance.eventstream.stream.models.ABCIInfoResponse
-import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockchainResponse
 import io.provenance.eventstream.stream.models.rpc.response.MessageType
 import io.provenance.eventstream.test.base.TestBase
@@ -31,6 +30,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
+import tendermint.abci.Types
+import tendermint.types.BlockOuterClass.Block
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StreamTests : TestBase() {
@@ -129,7 +130,7 @@ class StreamTests : TestBase() {
 
         @Test
         fun testAbciInfoSerialization() {
-            assert(templates.readAs(ABCIInfoResponse::class.java, "abci_info/success.json") != null)
+            assert(templates.readAs(Types.ResponseInfo.newBuilder(), "abci_info/success.json") != null)
         }
 
         @OptIn(ExperimentalCoroutinesApi::class)
@@ -140,7 +141,7 @@ class StreamTests : TestBase() {
             val tm = ServiceMocker.Builder()
                 .doFor("abciInfo") {
                     templates.readAs(
-                        ABCIInfoResponse::class.java,
+                        Types.ResponseInfo.newBuilder(),
                         "abci_info/success.json",
                         mapOf("last_block_height" to expectBlockHeight)
                     )
@@ -148,7 +149,7 @@ class StreamTests : TestBase() {
                 .build(MockTendermintServiceClient::class.java)
 
             dispatcherProvider.runBlockingTest {
-                assert(tm.abciInfo().result?.response?.lastBlockHeight == expectBlockHeight)
+                assert(tm.abciInfo().lastBlockHeight == expectBlockHeight)
             }
         }
 
@@ -157,14 +158,16 @@ class StreamTests : TestBase() {
         fun testBlockResponse() {
 
             val tendermint: TendermintServiceClient = ServiceMocker.Builder()
-                .doFor("block") { templates.readAs(BlockResponse::class.java, "block/${it[0]}.json") }
+                .doFor("block") {
+                    templates.readAs(Block.newBuilder(), "block/${it[0]}.json")
+                }
                 .build(MockTendermintServiceClient::class.java)
 
             val expectedHeight = MIN_HISTORICAL_BLOCK_HEIGHT
 
             // Expect success:
             dispatcherProvider.runBlockingTest {
-                assert(tendermint.block(expectedHeight).result?.block?.header?.height == expectedHeight)
+                assert(tendermint.block(expectedHeight).header?.height == expectedHeight)
             }
 
             // Retrieving a non-existent block should fail (negative case):
@@ -266,16 +269,16 @@ class StreamTests : TestBase() {
                     MIN_HISTORICAL_BLOCK_HEIGHT + 1,
                     MIN_HISTORICAL_BLOCK_HEIGHT + 2
                 )
-                val blocks: Array<BlockResponse> =
+                val blocks: Array<Block> =
                     heights
-                        .map { templates.unsafeReadAs(BlockResponse::class.java, "block/$it.json") }
+                        .map { templates.readAs(Block.newBuilder(), "block/$it.json")!! }
                         .toTypedArray()
 
                 // set up:
                 val ess = MockEventStreamService
                     .Builder()
                     .dispatchers(dispatcherProvider)
-                    .response(BlockResponse::class.java, *blocks)
+                    .response(blocks)
                     .build()
 
                 val receiver = ess.observeWebSocketEvent()
@@ -286,8 +289,10 @@ class StreamTests : TestBase() {
                     val event = receiver.receive()
                     assert(event is WebSocket.Event.OnMessageReceived)
                     val payload = ((event as WebSocket.Event.OnMessageReceived).message as Message.Text).value
-                    val response: BlockResponse? = moshi.adapter(BlockResponse::class.java).fromJson(payload)
-                    assert(response?.result?.block?.header?.height in heights)
+                    var blockBuilder = Block.newBuilder()
+                    JsonFormat.parser().merge(payload, blockBuilder)
+                    val response: Block? = blockBuilder.build()
+                    assert(response?.header?.height in heights)
                 }
             }
         }
@@ -353,7 +358,6 @@ class StreamTests : TestBase() {
                     .streamMetaBlocks()
                     .toList()
 
-                println(collectedSkip.size.toLong())
                 assert(collectedSkip.size.toLong() == EXPECTED_NONEMPTY_BLOCKS)
             }
         }
@@ -419,8 +423,6 @@ class StreamTests : TestBase() {
                     .toList()
 
                 assert(collected.size == expectTotal.toInt())
-                println(collected)
-                println(collected.filter { it.historical }.size)
                 assert(collected.filter { it.historical }.size.toLong() == EXPECTED_NONEMPTY_BLOCKS)
                 assert(collected.filter { !it.historical }.size.toLong() == eventStreamService.expectedResponseCount())
             }
