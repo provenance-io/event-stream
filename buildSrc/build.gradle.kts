@@ -3,7 +3,7 @@ plugins {
 }
 
 val gradleNexusVersion = "1.1.0"
-val kotlinVersion = "1.6.21"
+val kotlinVersion = "1.7.10"
 val ktLintVersion = "10.3.0"
 val dokkaVersion = kotlinVersion
 
