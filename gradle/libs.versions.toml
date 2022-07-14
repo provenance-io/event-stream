@@ -17,7 +17,7 @@ kotlinLogging = "2.1.23"
 logback = "1.2.11"
 moshi = "1.13.0"
 okHttp = "4.10.0"
-provenanceProtos = "1.10.0"
+provenanceProtos = "1.11.1"
 scarlet = "0.1.12"
 
 pluginProtobuf = "0.18.7"
